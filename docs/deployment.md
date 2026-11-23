@@ -1,0 +1,12 @@
+# Deploying UNINOTES
+
+UNINOTES runs on a Node.js host with PostgreSQL and Supabase Storage. Use a separate database and storage project for the client demo, with HTTPS enabled on the public URL.
+
+1. Set the variables from `.env.example` on the host. Keep `JWT_SECRET`, database URLs, and `SUPABASE_SERVICE_ROLE_KEY` server-side. Generate the JWT secret with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Use the PostgreSQL provider's certificate configuration so the host verifies the database identity.
+2. Create a **private** Supabase Storage bucket called `notes`. Keep anonymous and client-side writes disabled. If reusing an existing bucket, switch it to private before launch. The app resolves older public URLs for that same Supabase project through signed downloads. HTTPS links hosted elsewhere keep the access settings of the external provider.
+3. Run `npm ci`, then `npm run db:push` against the new database and `npm run db:seed` to create departments. In Supabase, run `prisma/restrict-supabase-api.sql` as the database owner after creating the tables. The application uses its server-side PostgreSQL connection. The seed creates departments only. If reusing a demo database, reset or disable old accounts that use the seeded password and rotate the JWT secret before opening access. Provision staff by assigning the role to a verified account through your database admin console. Assign each host to their department.
+4. Run `npm run build` and use `npm start` on the host. The upload route accepts documents up to 10 MiB. Configure the host to accept the multipart request size or use a Node host with a compatible ingress limit.
+5. Apply host-side rate limits to login, registration, upload, and other write endpoints before public access. Check that the registry audit passes on the deployed lockfile.
+6. In staging, register a student, submit a sample document, confirm that an unrelated account cannot access it, approve it as the department host, and verify an authenticated download. Use sample content you have permission to share.
+
+Share the hosted HTTPS URL with clients. Deploy from the repository source so local environment files, databases, and the original export archive stay outside the deployment. The original archive contains environment files and database copies. If it has been shared, rotate the database credentials, Supabase service-role key, and JWT secret, and review the copied data for exposure.
